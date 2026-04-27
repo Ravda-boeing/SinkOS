@@ -1,50 +1,603 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <link rel="icon" href="favicon.png" type="image/x-icon">
-  <title>Sink.log</title>
+<meta charset="UTF-8">
+<title>Sink Health Log – Sink OS V1.2</title>
+<link rel="icon" href="favicon.png" type="image/x-icon">
+
+<style>
+/* ============================================================
+   SINK OS THEME VARIABLES
+   ============================================================ */
+:root {
+  --accent: #3B6DF5;
+  --accent-hover: #3058C8;
+  --accent-soft: #E3EBFF;
+
+  --bg: #f3f3f3;
+  --surface: #ffffff;
+  --surface-soft: #f7f7f7;
+  --border: #dcdcdc;
+  --text: #222222;
+  --muted: #777777;
+
+  --card-bg: #ffffff;
+  --card-border: #dcdcdc;
+
+  --titlebar-bg: #e4e4e4;
+  --sidebar-bg: #f7f7f7;
+  --sidebar-hover: #e9e9e9;
+
+  --calendar-bg: #ffffff;
+  --calendar-border: #dcdcdc;
+}
+
+/* PURE BLACK THEME */
+body[data-theme="pureblack"] {
+  --bg: #000000;
+  --surface: #111111;
+  --surface-soft: #101010;
+  --border: #222222;
+  --text: #f5f5f5;
+  --muted: #aaaaaa;
+
+  --card-bg: #111111;
+  --card-border: #222222;
+
+  --titlebar-bg: #0d0d0d;
+  --sidebar-bg: #0d0d0d;
+  --sidebar-hover: #1a1a1a;
+
+  --calendar-bg: #111111;
+  --calendar-border: #222222;
+}
+
+/* SINK DARK THEME */
+body[data-theme="sinkdark"] {
+  --bg: #0a0f1f;
+  --surface: #111a2e;
+  --surface-soft: #10182b;
+  --border: #1b2438;
+  --text: #dce3ff;
+  --muted: #8f9ac2;
+
+  --card-bg: #141e33;
+  --card-border: #1b2438;
+
+  --titlebar-bg: #10182b;
+  --sidebar-bg: #10182b;
+  --sidebar-hover: #18223a;
+
+  --calendar-bg: #141e33;
+  --calendar-border: #1b2438;
+}
+
+/* ============================================================
+   GLOBAL STYLES
+   ============================================================ */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* ============================================================
+   TITLE BAR
+   ============================================================ */
+.titlebar {
+  height: 32px;
+  background: var(--titlebar-bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.titlebar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titlebar .dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+.titlebar .appname {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.titlebar-btn {
+  width: 28px;
+  height: 20px;
+  border-radius: 3px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.titlebar-btn:hover {
+  background: rgba(0,0,0,0.08);
+}
+
+.titlebar-btn.close:hover {
+  background: #e81123;
+  color: #ffffff;
+}
+
+/* ============================================================
+   LAYOUT: SIDEBAR + MAIN
+   ============================================================ */
+.container {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 220px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar button {
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.sidebar button:hover {
+  background: var(--sidebar-hover);
+}
+
+.sidebar button.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* MAIN CONTENT */
+.main {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* ============================================================
+   DASHBOARD CARDS
+   ============================================================ */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 20px;
+}
+
+/* ============================================================
+   INPUTS
+   ============================================================ */
+input, textarea, select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+textarea {
+  height: 120px;
+  resize: vertical;
+}
+
+button.primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button.primary:hover {
+  background: var(--accent-hover);
+}
+
+/* ============================================================
+   CALENDAR
+   ============================================================ */
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.calendar-day {
+  background: var(--calendar-bg);
+  border: 1px solid var(--calendar-border);
+  border-radius: 6px;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.calendar-day:hover {
+  background: var(--accent-soft);
+}
+
+.calendar-day.has-entry {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+/* ============================================================
+   ANALYTICS
+   ============================================================ */
+.analytics-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.analytics-box {
+  flex: 1;
+  min-width: 260px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.analytics-box h3 {
+  margin-top: 0;
+}
+
+/* ============================================================
+   TASKBAR
+   ============================================================ */
+#taskbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 52px;
+  background: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid #222;
+  z-index: 9999;
+}
+
+#centerIcons {
+  display: flex;
+  gap: 14px;
+}
+
+.emoji-button {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: white;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.emoji-button:hover {
+  transform: scale(1.2);
+  opacity: 0.8;
+}
+</style>
 </head>
-<body style="font-family: monospace; background: #111; color: #eee; padding: 2rem">
-  <h2>🗃️ Sink.log Viewer</h2>
-  <input id="logCmd" placeholder="Enter command..." style="width: 300px;" />
-  <button onclick="runLogCommand()">Run</button>
-  <pre id="logDisplay" style="margin-top:1rem; white-space: pre-wrap;"></pre>
+<body data-theme="light">
 
-  <script src="sink-logger.js"></script>
-  <script>
-    function renderLogs(logs) {
-      const logDisplay = document.getElementById("logDisplay");
-      if (logs.length === 0) {
-        logDisplay.textContent = "No logs available.";
+<!-- ============================================================
+     TITLE BAR
+     ============================================================ -->
+<div class="titlebar">
+  <div class="titlebar-left">
+    <div class="dot"></div>
+    <span class="appname">Sink Health Log</span>
+  </div>
+
+  <div class="titlebar-right">
+    <button class="titlebar-btn close">×</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     MAIN LAYOUT
+     ============================================================ -->
+<div class="container">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <button class="active" data-view="dashboard">Dashboard</button>
+    <button data-view="calendar">Calendar</button>
+    <button data-view="entry">New Entry</button>
+    <button data-view="analytics">Analytics</button>
+
+    <hr style="border: none; border-top: 1px solid var(--border); margin: 12px 0;">
+
+    <div class="theme-buttons">
+      <button data-theme="light">☀ Light</button>
+      <button data-theme="pureblack">⬛ Pure Black</button>
+      <button data-theme="sinkdark">🌌 Sink Dark</button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main" id="mainContent">
+
+    <!-- DASHBOARD -->
+    <div id="view-dashboard">
+      <div class="card">
+        <h2>Today’s Summary</h2>
+        <p><strong>Mood:</strong> <span id="dashMood">–</span></p>
+        <p><strong>Sleep:</strong> <span id="dashSleep">–</span></p>
+        <p><strong>Water:</strong> <span id="dashWater">–</span></p>
+        <p><strong>Symptoms:</strong> <span id="dashSymptoms">–</span></p>
+      </div>
+
+      <div class="card">
+        <h2>Recent Notes</h2>
+        <p id="dashNotes">No recent notes.</p>
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div id="view-calendar" style="display:none;">
+      <div class="card">
+        <h2>Calendar</h2>
+        <div class="calendar" id="calendarGrid"></div>
+      </div>
+    </div>
+
+    <!-- NEW ENTRY -->
+    <div id="view-entry" style="display:none;">
+      <div class="card">
+        <h2>New Daily Entry</h2>
+
+        <label>Mood</label>
+        <select id="entryMood">
+          <option value="">Select mood</option>
+          <option>Great</option>
+          <option>Good</option>
+          <option>Okay</option>
+          <option>Bad</option>
+          <option>Terrible</option>
+        </select>
+
+        <label>Sleep (hours)</label>
+        <input type="number" id="entrySleep" min="0" max="24">
+
+        <label>Water Intake (cups)</label>
+        <input type="number" id="entryWater" min="0" max="20">
+
+        <label>Symptoms</label>
+        <input type="text" id="entrySymptoms" placeholder="e.g. headache, sore throat">
+
+        <label>Notes</label>
+        <textarea id="entryNotes"></textarea>
+
+        <button class="primary" id="saveEntryBtn">Save Entry</button>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div id="view-analytics" style="display:none;">
+      <div class="card">
+        <h2>Analytics</h2>
+
+        <div class="analytics-row">
+          <div class="analytics-box">
+            <h3>Mood Frequency</h3>
+            <p id="analyticsMood">–</p>
+          </div>
+
+          <div class="analytics-box">
+            <h3>Average Sleep</h3>
+            <p id="analyticsSleep">–</p>
+          </div>
+
+          <div class="analytics-box">
+            <h3>Average Water Intake</h3>
+            <p id="analyticsWater">–</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     TASKBAR
+     ============================================================ -->
+<div id="taskbar">
+  <div id="centerIcons">
+    <button class="emoji-button" onclick="window.location.href='settings.html'">⚙️</button>
+    <button class="emoji-button" onclick="window.location.href='ai.html'">🧠</button>
+    <button class="emoji-button" onclick="window.location.href='browser.html'">🌐</button>
+    <button class="emoji-button" onclick="window.location.href='create.html'">📺</button>
+    <button class="emoji-button" onclick="window.location.href='cricket.html'">🏏</button>
+    <button class="emoji-button" onclick="window.location.href='email.html'">💬</button>
+    <button class="emoji-button" onclick="window.location.href='game.html'">🎮</button>
+    <button class="emoji-button" onclick="window.location.href='health.html'">⚕️</button>
+    <button class="emoji-button" onclick="window.location.href='terminal.html'">💻</button>
+    <button class="emoji-button" onclick="window.location.href='bg.html'">🖥️</button>
+    <button class="emoji-button" onclick="window.location.href='writer.html'">📃</button>
+    <button class="emoji-button" onclick="window.location.href='sinkexplorer.html'">🗂️</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+/* ============================================================
+   CALENDAR RENDERING
+   ============================================================ */
+function renderCalendar() {
+  const grid = document.getElementById("calendarGrid");
+  grid.innerHTML = "";
+
+  const logs = loadLogs();
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Empty slots before day 1
+  for (let i = 0; i < firstDay; i++) {
+    const empty = document.createElement("div");
+    grid.appendChild(empty);
+  }
+
+  // Actual days
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateKey = `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const day = document.createElement("div");
+    day.className = "calendar-day";
+    day.textContent = d;
+
+    if (logs[dateKey]) {
+      day.classList.add("has-entry");
+    }
+
+    day.addEventListener("click", () => {
+      const entry = logs[dateKey];
+      if (!entry) {
+        alert("No entry for this day.");
       } else {
-        logDisplay.textContent = logs.map(log =>
-          `⏱️ ${log.timestamp}\n${log.summary}\n`
-        ).join("\n──────────────\n\n");
-      }
-    }
-
-    function runLogCommand() {
-      const cmd = document.getElementById("logCmd").value.trim();
-      if (cmd === "Sink.Del") {
-        localStorage.removeItem(LOG_KEY);
-        localStorage.removeItem(RECOVERY_KEY);
-        renderLogs([]);
-        alert("All logs deleted.");
-      } else if (cmd === "Sink.Recover") {
-        const archive = JSON.parse(localStorage.getItem(RECOVERY_KEY)) || [];
-        const now = Date.now();
-        const withinGrace = archive.filter(log =>
-          now - new Date(log.timestamp).getTime() <= (EXPIRY + GRACE_PERIOD)
+        alert(
+          `Mood: ${entry.mood}\n` +
+          `Sleep: ${entry.sleep} hours\n` +
+          `Water: ${entry.water} cups\n` +
+          `Symptoms: ${entry.symptoms}\n` +
+          `Notes: ${entry.notes}`
         );
-        localStorage.setItem(LOG_KEY, JSON.stringify(withinGrace));
-        alert("Recovered expired logs within grace period.");
-        renderLogs(withinGrace);
       }
-    }
+    });
 
-    const currentLogs = JSON.parse(localStorage.getItem("sinkOSLogs")) || [];
-    renderLogs(currentLogs);
-  </script>
+    grid.appendChild(day);
+  }
+}
+
+/* ============================================================
+   ANALYTICS
+   ============================================================ */
+function updateAnalytics() {
+  const logs = loadLogs();
+  const entries = Object.values(logs);
+
+  if (entries.length === 0) {
+    document.getElementById("analyticsMood").textContent = "No data";
+    document.getElementById("analyticsSleep").textContent = "No data";
+    document.getElementById("analyticsWater").textContent = "No data";
+    return;
+  }
+
+  // Mood frequency
+  const moodCount = {};
+  entries.forEach(e => {
+    if (!e.mood) return;
+    moodCount[e.mood] = (moodCount[e.mood] || 0) + 1;
+  });
+
+  const moodText = Object.entries(moodCount)
+    .map(([m, c]) => `${m}: ${c}`)
+    .join(", ");
+
+  document.getElementById("analyticsMood").textContent =
+    moodText || "No mood data";
+
+  // Average sleep
+  const sleepVals = entries
+    .map(e => Number(e.sleep))
+    .filter(n => !isNaN(n));
+
+  const avgSleep = sleepVals.length
+    ? (sleepVals.reduce((a,b)=>a+b) / sleepVals.length).toFixed(1)
+    : "No data";
+
+  document.getElementById("analyticsSleep").textContent =
+    avgSleep + " hrs";
+
+  // Average water
+  const waterVals = entries
+    .map(e => Number(e.water))
+    .filter(n => !isNaN(n));
+
+  const avgWater = waterVals.length
+    ? (waterVals.reduce((a,b)=>a+b) / waterVals.length).toFixed(1)
+    : "No data";
+
+  document.getElementById("analyticsWater").textContent =
+    avgWater + " cups";
+}
+
+/* ============================================================
+   THEME SWITCHING
+   ============================================================ */
+document.querySelectorAll("[data-theme]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const theme = btn.getAttribute("data-theme");
+    document.body.setAttribute("data-theme", theme);
+  });
+});
+
+/* ============================================================
+   CLOSE BUTTON → RETURN TO DESKTOP
+   ============================================================ */
+document.querySelector(".titlebar-btn.close").addEventListener("click", () => {
+  window.location.href = "bg.html";
+});
+
+/* ============================================================
+   INITIAL LOAD
+   ============================================================ */
+updateDashboard();
+renderCalendar();
+updateAnalytics();
+</script>
 </body>
 </html>
