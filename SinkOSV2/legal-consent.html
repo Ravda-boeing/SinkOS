@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SinkOS — Terms &amp; Privacy</title>
+<!-- ============================================================
+     SinkOS Legal Consent Screen
+     Requires: legal/terms.pdf and legal/privacy.pdf (relative to this file)
+     On "I Agree" -> stores a consent flag, then redirects to installation.html
+     ============================================================ -->
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:#0b0e11}
+
+  .legal-screen{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:100vh;min-height:100dvh;
+    padding:calc(40px + env(safe-area-inset-top,0px)) 20px calc(40px + env(safe-area-inset-bottom,0px));
+    font-family:'Segoe UI','Inter',system-ui,sans-serif;
+    background:radial-gradient(circle at top,rgba(79,209,255,.12),transparent 60%),#0b0e11;
+    color:#fff;
+  }
+  .legal-card{
+    width:min(480px,100%);
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:20px;padding:36px 32px;
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    box-shadow:0 24px 60px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);
+    text-align:center;
+  }
+  .legal-card h1{font-size:20px;font-weight:600;margin:0 0 8px;letter-spacing:.2px}
+  .legal-card p.subtitle{font-size:14px;color:rgba(255,255,255,.6);margin:0 0 28px;line-height:1.5}
+
+  .legal-doc-links{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
+  .legal-doc-link{
+    display:flex;align-items:center;justify-content:space-between;width:100%;
+    padding:14px 16px;font:inherit;font-size:14px;font-weight:500;text-align:left;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;
+    color:#fff;cursor:pointer;
+    transition:background .15s ease,border-color .15s ease,transform .15s ease;
+  }
+  .legal-doc-link:hover,.legal-doc-link:focus-visible{
+    background:rgba(79,209,255,.1);border-color:rgba(79,209,255,.4);transform:translateY(-1px);outline:none;
+  }
+  .legal-doc-link svg{opacity:.6;flex-shrink:0}
+  .legal-doc-link .doc-icon-label{display:flex;align-items:center;gap:10px}
+
+  .legal-agree-btn{
+    width:100%;padding:15px;border:none;border-radius:12px;
+    background:linear-gradient(135deg,#4fd1ff,#3a8fff);color:#06131c;
+    font:inherit;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;
+    transition:transform .15s ease,box-shadow .15s ease,opacity .15s ease;
+    box-shadow:0 8px 24px rgba(79,209,255,.35);
+  }
+  .legal-agree-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(79,209,255,.5)}
+  .legal-agree-btn:active{transform:translateY(0)}
+  .legal-agree-btn:focus-visible{outline:2px solid #fff;outline-offset:3px}
+  .legal-agree-btn:disabled{opacity:.7;cursor:default;transform:none}
+
+  .legal-fineprint{font-size:12px;color:rgba(255,255,255,.4);margin-top:18px;line-height:1.5}
+
+  /* PDF viewer modal */
+  .legal-modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    z-index:1000;align-items:center;justify-content:center;padding:24px;
+  }
+  .legal-modal-overlay.open{display:flex}
+  .legal-modal{
+    background:#14181f;border:1px solid rgba(255,255,255,.15);border-radius:16px;
+    width:min(900px,100%);height:min(85vh,900px);display:flex;flex-direction:column;
+    overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.6);font-family:'Segoe UI','Inter',system-ui,sans-serif;
+  }
+  .legal-modal-header{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.1);flex-shrink:0;
+  }
+  .legal-modal-header h3{margin:0;font-size:15px;color:#fff;font-weight:600;flex:1}
+  .legal-modal-newtab{font-size:13px;color:#4fd1ff;text-decoration:underline}
+  .legal-modal-close{
+    background:rgba(255,255,255,.08);border:none;color:#fff;width:30px;height:30px;
+    border-radius:8px;cursor:pointer;font-size:17px;line-height:1;transition:background .15s ease;
+  }
+  .legal-modal-close:hover,.legal-modal-close:focus-visible{background:rgba(255,255,255,.2);outline:none}
+  .legal-modal iframe{flex:1;width:100%;border:none;background:#fff}
+</style>
+</head>
+<body>
+
+<div class="legal-screen">
+  <div class="legal-card">
+    <h1>Before you get started</h1>
+    <p class="subtitle">Please review the Terms of Service and Privacy Policy for SinkOS.</p>
+
+    <div class="legal-doc-links">
+      <button type="button" class="legal-doc-link" onclick="openLegalDoc('legal/terms.pdf','Terms of Service')">
+        <span class="doc-icon-label">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>
+          </svg>
+          Terms of Service
+        </span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+
+      <button type="button" class="legal-doc-link" onclick="openLegalDoc('legal/privacy.pdf','Privacy Policy')">
+        <span class="doc-icon-label">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Privacy Policy
+        </span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+
+    <button type="button" class="legal-agree-btn" id="legal-agree-btn" onclick="agreeAndContinue()">I Agree</button>
+
+    <p class="legal-fineprint">
+      By clicking “I Agree,” you confirm that you have read and accepted<br>
+      the Terms of Service and Privacy Policy.
+    </p>
+  </div>
+</div>
+
+<!-- PDF viewer modal -->
+<div class="legal-modal-overlay" id="legal-modal-overlay">
+  <div class="legal-modal" role="dialog" aria-modal="true" aria-labelledby="legal-modal-title">
+    <div class="legal-modal-header">
+      <h3 id="legal-modal-title">Document</h3>
+      <a class="legal-modal-newtab" id="legal-modal-newtab" href="#" target="_blank" rel="noopener">Open in new tab</a>
+      <button type="button" class="legal-modal-close" id="legal-modal-close" aria-label="Close" onclick="closeLegalDoc()">&times;</button>
+    </div>
+    <iframe id="legal-modal-frame" title="Legal document" src="about:blank"></iframe>
+  </div>
+</div>
+
+<script>
+  var CONSENT_VERSION = 'v1.0';
+  var NEXT_PAGE = 'installation.html';
+  var lastFocus = null;
+
+  function openLegalDoc(url, title) {
+    lastFocus = document.activeElement;
+    document.getElementById('legal-modal-title').textContent = title;
+    document.getElementById('legal-modal-newtab').href = url; // fallback: many mobile browsers can't render PDFs in an iframe
+    document.getElementById('legal-modal-frame').src = url;
+    document.getElementById('legal-modal-overlay').classList.add('open');
+    document.getElementById('legal-modal-close').focus();
+  }
+
+  function closeLegalDoc() {
+    document.getElementById('legal-modal-overlay').classList.remove('open');
+    document.getElementById('legal-modal-frame').src = 'about:blank'; // '' can reload this page inside the iframe in some browsers
+    if (lastFocus) lastFocus.focus();
+  }
+
+  document.getElementById('legal-modal-overlay').addEventListener('click', function (e) {
+    if (e.target === this) closeLegalDoc();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeLegalDoc();
+  });
+
+  // Reset the button if the user comes back with the browser's Back button
+  window.addEventListener('pageshow', function () {
+    var btn = document.getElementById('legal-agree-btn');
+    btn.disabled = false;
+    btn.textContent = 'I Agree';
+  });
+
+  async function agreeAndContinue() {
+    var btn = document.getElementById('legal-agree-btn');
+    btn.disabled = true;
+    btn.textContent = 'Redirecting...';
+
+    // Local record of consent. The next page can check this flag.
+    // (Client-side only: it shows the user clicked, it does not enforce anything.)
+    try {
+      localStorage.setItem('sinkos_terms_accepted', JSON.stringify({
+        version: CONSENT_VERSION,
+        at: new Date().toISOString()
+      }));
+    } catch (err) {
+      console.warn('Could not store consent flag:', err);
+    }
+
+    // Optional: also record consent server-side. Needs `sb` (Supabase client) on this page
+    // and terms_accepted_at / terms_version columns on `profiles`.
+    //
+    // try {
+    //   const { data: { user } } = await sb.auth.getUser();
+    //   if (user) {
+    //     await sb.from('profiles').update({
+    //       terms_accepted_at: new Date().toISOString(),
+    //       terms_version: CONSENT_VERSION
+    //     }).eq('id', user.id);
+    //   }
+    // } catch (err) {
+    //   console.error('Failed to record consent:', err);
+    // }
+
+    window.location.href = NEXT_PAGE;
+  }
+</script>
+</body>
+</html>
