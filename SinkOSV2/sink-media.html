@@ -81,7 +81,8 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.6fr) minm
   <section class="panel side" aria-label="Results">
     <div class="tabs">
       <div class="pill" role="group" aria-label="List">
-        <button id="tSearch" aria-pressed="true">Results</button>
+        <button id="tBrowse" aria-pressed="false">Browse</button>
+        <button id="tSearch" aria-pressed="false">Results</button>
         <button id="tFavs" aria-pressed="false">Favourites</button>
       </div>
     </div>
@@ -95,12 +96,12 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.6fr) minm
 const CFG = {
   SUPABASE_URL: 'https://okknkixdbjsnqrwlfgzn.supabase.co',
   SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_0Axc0hmKuwVwVWD7tyIwKA_mZr7QJst',
-  LOCKSCREEN_URL: 'https://ravda-boeing.github.io/SinkOSAuth/lockscreen.html'
+  LOCKSCREEN_URL: 'PASTE_YOUR_LOCKSCREEN_URL'
 };
 
 const sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_PUBLISHABLE_KEY);
 const $ = id => document.getElementById(id);
-let favs = new Map(), results = [], list = [], idx = -1, player = null, view = 'search';
+let favs = new Map(), results = [], list = [], idx = -1, player = null, view = 'search', browse = [], nextToken = null, loadingMore = false;
 
 /* YouTube IFrame API */
 const ytReady = new Promise(r => { window.onYouTubeIframeAPIReady = r; });
@@ -126,7 +127,12 @@ async function init() {
   }
   const { data } = await sb.from('media_favorites').select('*').eq('source', 'youtube').order('created_at', { ascending: false });
   favs = new Map((data || []).map(f => [f.external_id, f]));
-  msg('Search for a song or video to get started.');
+  setView('browse');
+  loadBrowse();
+}
+
+async function fnMsg(error, fallback) {
+  try { return (await error.context.json()).error || fallback; } catch (_) { return fallback; }
 }
 
 async function search(q) {
@@ -134,7 +140,7 @@ async function search(q) {
   if (id) return openLink(id);
   msg('Searching…');
   const { data, error } = await sb.functions.invoke('youtube-search', { body: { q } });
-  if (error || data?.error) return msg(data?.error || 'Search failed. Check your connection and try again.', true);
+  if (error) return msg(await fnMsg(error, 'Search failed. Check your connection and try again.'), true);
   results = data.results;
   setView('search');
   if (!results.length) msg('Nothing found. Try different words.');
@@ -153,16 +159,16 @@ async function openLink(id) {
 
 function setView(v) {
   view = v;
+  $('tBrowse').setAttribute('aria-pressed', v === 'browse');
   $('tSearch').setAttribute('aria-pressed', v === 'search');
   $('tFavs').setAttribute('aria-pressed', v === 'favs');
-  list = v === 'search' ? results : [...favs.values()].map(f => ({ id: f.external_id, title: f.title, channel: f.channel, thumb: f.thumb }));
+  list = v === 'browse' ? browse : v === 'search' ? results : [...favs.values()].map(f => ({ id: f.external_id, title: f.title, channel: f.channel, thumb: f.thumb }));
   idx = list.findIndex(x => x.id === currentId);
-  if (!list.length) return msg(v === 'favs' ? 'No favourites yet. Tap the star on anything you like.' : 'Search for a song or video to get started.');
+  if (!list.length) return msg(v === 'favs' ? 'No favourites yet. Tap the star on anything you like.' : v === 'browse' ? 'Loading videos…' : 'Search for a song or video to get started.');
   render();
 }
 
-function render() {
-  $('list').replaceChildren(...list.map((v, i) => {
+const card = (v, i) => {
     const li = document.createElement('li');
     li.className = 'item' + (v.id === currentId ? ' on' : '');
     const img = document.createElement('img'); img.alt = ''; img.loading = 'lazy'; if (v.thumb) img.src = v.thumb;
@@ -180,8 +186,8 @@ function render() {
     li.onclick = () => play(i);
     li.onkeydown = e => { if (e.key === 'Enter') play(i); };
     return li;
-  }));
-}
+};
+function render() { $('list').replaceChildren(...list.map(card)); }
 
 let currentId = null;
 async function play(i) {
@@ -219,6 +225,30 @@ async function toggleFav(v) {
 $('f').onsubmit = e => { e.preventDefault(); const q = $('q').value.trim(); if (q) search(q); };
 $('tSearch').onclick = () => setView('search');
 $('tFavs').onclick = () => setView('favs');
+$('tBrowse').onclick = () => setView('browse');
+
+async function loadBrowse() {
+  if (loadingMore || (browse.length && !nextToken)) return;
+  loadingMore = true;
+  const { data, error } = await sb.functions.invoke('youtube-search', { body: { mode: 'trending', pageToken: nextToken } });
+  loadingMore = false;
+  if (error) {
+    if (!browse.length && view === 'browse') msg(await fnMsg(error, "Couldn't load videos. Check your connection and try again."), true);
+    return;
+  }
+  const have = new Set(browse.map(v => v.id));
+  const fresh = data.results.filter(v => !have.has(v.id));
+  nextToken = data.nextPageToken;
+  const start = browse.length;
+  browse.push(...fresh);
+  if (view !== 'browse') return;
+  if (!start) return setView('browse');
+  fresh.forEach((v, k) => $('list').append(card(v, start + k)));
+}
+$('list').addEventListener('scroll', e => {
+  const l = e.target;
+  if (view === 'browse' && l.scrollTop + l.clientHeight >= l.scrollHeight - 240) loadBrowse();
+});
 init();
 </script>
 </body>
