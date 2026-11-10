@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sink Media</title>
+<style>
+:root{
+  --deep:#0a2540; --sky:#2b8fd6; --aqua:#35c4b0; --text:#f3f9ff; --dim:#b3cde6;
+  --glass:rgba(255,255,255,.13); --glass-hi:rgba(255,255,255,.24); --line:rgba(255,255,255,.32);
+  --star:#ffd54f; --err:#ffb4a8;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font:15px/1.45 "Segoe UI",system-ui,sans-serif;color:var(--text);
+  background:radial-gradient(1100px 600px at 10% -10%,var(--sky),transparent 70%),
+             radial-gradient(900px 560px at 100% 0%,var(--aqua),transparent 65%),var(--deep);
+  background-attachment:fixed;display:flex;flex-direction:column}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #fff;outline-offset:2px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:14px 20px}
+h1{font-size:20px;font-weight:600;margin:0 12px 0 0}
+.pill{display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(12px)}
+.pill button{border:0;background:none;padding:6px 16px;border-radius:999px;cursor:pointer}
+.pill button[aria-pressed="true"]{background:var(--glass-hi);box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+.pill button:disabled{opacity:.5;cursor:not-allowed}
+form{flex:1;min-width:240px;display:flex;gap:8px}
+input[type=search]{flex:1;padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(12px);outline-offset:2px}
+input::placeholder{color:var(--dim)}
+.go{padding:9px 20px;border-radius:999px;border:1px solid var(--line);cursor:pointer;
+  background:linear-gradient(#5fc8ff,#1e7cc4);font-weight:600;text-shadow:0 1px 1px rgba(0,0,0,.35)}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:16px;padding:0 20px 20px}
+.panel{background:var(--glass);border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(14px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 10px 30px rgba(0,20,50,.35);min-height:0}
+.stage{display:flex;flex-direction:column;padding:12px;gap:10px}
+.screen{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#041424}
+.screen iframe,.screen #yt{position:absolute;inset:0;width:100%;height:100%}
+.empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:var(--dim)}
+.now{padding:2px 6px}
+.now b{display:block;font-weight:600}
+.now span{color:var(--dim)}
+.side{display:flex;flex-direction:column;overflow:hidden}
+.tabs{padding:10px 12px 0}
+.list{flex:1;overflow:auto;padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px;list-style:none;margin:0}
+.item{display:grid;grid-template-columns:96px 1fr auto;gap:10px;align-items:center;padding:6px;border-radius:12px;cursor:pointer;border:1px solid transparent}
+.item:hover{background:var(--glass)}
+.item.on{background:var(--glass-hi);border-color:var(--line)}
+.item img{width:96px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;background:#041424}
+.item .t{font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.item .c{font-size:13px;color:var(--dim)}
+.star{border:0;background:none;font-size:20px;cursor:pointer;color:var(--dim);padding:6px}
+.star[aria-pressed="true"]{color:var(--star)}
+.msg{padding:18px;color:var(--dim)}
+.msg.err{color:var(--err)}
+@media (max-width:820px){main{grid-template-columns:1fr;overflow:auto}.side{max-height:60vh}}
+@media (prefers-reduced-motion:no-preference){.item{transition:background .15s}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Sink Media</h1>
+  <div class="pill" role="group" aria-label="Source">
+    <button aria-pressed="true">YouTube</button>
+    <button disabled title="Coming next">SoundCloud</button>
+  </div>
+  <form id="f">
+    <input type="search" id="q" placeholder="Search for a song or video, or paste a YouTube link" aria-label="Search YouTube" autocomplete="off">
+    <button class="go" type="submit">Search</button>
+  </form>
+</header>
+
+<main>
+  <section class="panel stage" aria-label="Player">
+    <div class="screen">
+      <div id="yt"></div>
+      <div class="empty" id="empty">Search for something, or open a favourite, and it plays here.</div>
+    </div>
+    <div class="now" id="now" aria-live="polite"></div>
+  </section>
+
+  <section class="panel side" aria-label="Results">
+    <div class="tabs">
+      <div class="pill" role="group" aria-label="List">
+        <button id="tSearch" aria-pressed="true">Results</button>
+        <button id="tFavs" aria-pressed="false">Favourites</button>
+      </div>
+    </div>
+    <ul class="list" id="list"></ul>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* Publishable keys are safe in browser code. Never put a secret key (sb_secret_...) here. */
+const CFG = {
+  SUPABASE_URL: 'https://okknkixdbjsnqrwlfgzn.supabase.co',
+  SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_0Axc0hmKuwVwVWD7tyIwKA_mZr7QJst',
+  LOCKSCREEN_URL: 'https://ravda-boeing.github.io/SinkOSAuth/lockscreen.html'
+};
+
+const sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_PUBLISHABLE_KEY);
+const $ = id => document.getElementById(id);
+let favs = new Map(), results = [], list = [], idx = -1, player = null, view = 'search';
+
+/* YouTube IFrame API */
+const ytReady = new Promise(r => { window.onYouTubeIframeAPIReady = r; });
+document.head.appendChild(Object.assign(document.createElement('script'), { src: 'https://www.youtube.com/iframe_api' }));
+
+function msg(text, err) {
+  const li = document.createElement('li');
+  li.className = 'msg' + (err ? ' err' : '');
+  li.textContent = text;
+  $('list').replaceChildren(li);
+}
+
+function parseId(s) {
+  const m = s.match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) {
+    location.href = CFG.LOCKSCREEN_URL + '?redirect_to=' + encodeURIComponent(location.href);
+    return;
+  }
+  const { data } = await sb.from('media_favorites').select('*').eq('source', 'youtube').order('created_at', { ascending: false });
+  favs = new Map((data || []).map(f => [f.external_id, f]));
+  msg('Search for a song or video to get started.');
+}
+
+async function search(q) {
+  const id = parseId(q);
+  if (id) return openLink(id);
+  msg('Searching…');
+  const { data, error } = await sb.functions.invoke('youtube-search', { body: { q } });
+  if (error || data?.error) return msg(data?.error || 'Search failed. Check your connection and try again.', true);
+  results = data.results;
+  setView('search');
+  if (!results.length) msg('Nothing found. Try different words.');
+}
+
+async function openLink(id) {
+  let v = { id, title: 'YouTube video', channel: '', thumb: `https://i.ytimg.com/vi/${id}/mqdefault.jpg` };
+  try {
+    const r = await fetch('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent('https://www.youtube.com/watch?v=' + id));
+    if (r.ok) { const j = await r.json(); v.title = j.title; v.channel = j.author_name; }
+  } catch (_) { /* fine: keeps the generic title */ }
+  results = [v];
+  setView('search');
+  play(0);
+}
+
+function setView(v) {
+  view = v;
+  $('tSearch').setAttribute('aria-pressed', v === 'search');
+  $('tFavs').setAttribute('aria-pressed', v === 'favs');
+  list = v === 'search' ? results : [...favs.values()].map(f => ({ id: f.external_id, title: f.title, channel: f.channel, thumb: f.thumb }));
+  idx = list.findIndex(x => x.id === currentId);
+  if (!list.length) return msg(v === 'favs' ? 'No favourites yet. Tap the star on anything you like.' : 'Search for a song or video to get started.');
+  render();
+}
+
+function render() {
+  $('list').replaceChildren(...list.map((v, i) => {
+    const li = document.createElement('li');
+    li.className = 'item' + (v.id === currentId ? ' on' : '');
+    const img = document.createElement('img'); img.alt = ''; img.loading = 'lazy'; if (v.thumb) img.src = v.thumb;
+    const box = document.createElement('div');
+    const t = document.createElement('div'); t.className = 't'; t.textContent = v.title;
+    const c = document.createElement('div'); c.className = 'c'; c.textContent = v.channel || '';
+    box.append(t, c);
+    const star = document.createElement('button');
+    star.className = 'star'; star.textContent = '★';
+    star.setAttribute('aria-pressed', favs.has(v.id));
+    star.setAttribute('aria-label', favs.has(v.id) ? 'Remove from favourites' : 'Add to favourites');
+    star.onclick = e => { e.stopPropagation(); toggleFav(v); };
+    li.append(img, box, star);
+    li.tabIndex = 0;
+    li.onclick = () => play(i);
+    li.onkeydown = e => { if (e.key === 'Enter') play(i); };
+    return li;
+  }));
+}
+
+let currentId = null;
+async function play(i) {
+  idx = i; const v = list[i]; currentId = v.id;
+  $('empty').hidden = true;
+  $('now').innerHTML = '<b></b><span></span>';
+  $('now').firstChild.textContent = v.title;
+  $('now').lastChild.textContent = v.channel || '';
+  await ytReady;
+  if (!player) {
+    player = new YT.Player('yt', {
+      host: 'https://www.youtube-nocookie.com', width: '100%', height: '100%', videoId: v.id,
+      playerVars: { autoplay: 1, playsinline: 1, rel: 0 },
+      events: {
+        onStateChange: e => { if (e.data === YT.PlayerState.ENDED && idx < list.length - 1) play(idx + 1); },
+        onError: () => { if (idx < list.length - 1) play(idx + 1); else $('now').lastChild.textContent = "This video can't be played here. Try another."; }
+      }
+    });
+  } else player.loadVideoById(v.id);
+  render();
+}
+
+async function toggleFav(v) {
+  if (favs.has(v.id)) {
+    const { error } = await sb.from('media_favorites').delete().eq('id', favs.get(v.id).id);
+    if (!error) favs.delete(v.id);
+  } else {
+    const { data, error } = await sb.from('media_favorites')
+      .insert({ source: 'youtube', external_id: v.id, title: v.title, channel: v.channel, thumb: v.thumb }).select().single();
+    if (!error) favs.set(v.id, data);
+  }
+  if (view === 'favs') { const keep = currentId; setView('favs'); currentId = keep; } else render();
+}
+
+$('f').onsubmit = e => { e.preventDefault(); const q = $('q').value.trim(); if (q) search(q); };
+$('tSearch').onclick = () => setView('search');
+$('tFavs').onclick = () => setView('favs');
+init();
+</script>
+</body>
+</html>
